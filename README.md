@@ -6,30 +6,7 @@ This repository contains the source code, containerization setup, and GitOps CI/
 The core objective of this service is to eliminate repetitive manual incident investigation (`kubectl`, Kibana, Grafana) when production alerts fire. Operating under a **Zero-Inbound Exposure** security model, the agent proactively polls firing alerts from GKE, correlates cross-cluster telemetry and Kubernetes events, redacts sensitive PII/secrets, and leverages Google Gemini LLMs to deliver structured Root Cause Analysis (RCA) and safe, Human-in-the-Loop `kubectl` remediation guidance via email.
 
 ## 🏗️ System Architecture
-
-```mermaid
-flowchart LR
-    subgraph OpenStack ["🏢 OpenStack Cluster (ns: monitoring)"]
-        AGENT["🤖 AI-SRE Agent<br/>(FastAPI + 10s Poller)"]
-        K8S_API["☸️ K8s API Server<br/>(Read-Only RBAC)"]
-        AGENT <-->|"Pod Status & Events"| K8S_API
-    end
-
-    subgraph GKE ["☁️ Google Cloud GKE (Observability Hub)"]
-        GRAF["📈 Grafana Alerting API"]
-        ES["🔍 Elasticsearch (k8s-logs-*)"]
-        PROM["🔥 Central Prometheus"]
-    end
-
-    GEMINI["✨ Google Gemini API<br/>(Multi-Model Failover)"]
-    SRE(("👨‍💻 SRE / DevOps<br/>(Gmail RCA Report)"))
-
-    AGENT ==>|"1. Outbound HTTPS Polling (10s)"| GRAF
-    AGENT ==>|"2. Historical Error Log Query"| ES
-    AGENT ==>|"3. Pod Resource Metrics"| PROM
-    AGENT <==>|"4. Redacted Context -> Structured RCA"| GEMINI
-    AGENT ==>|"5. SMTP Alert + Kubectl Guidance"| SRE
-```
+![AI-SRE Alert Triage Architecture](images/ai-sre-architecture.png)
 
 **Incident Triage Workflow:**
 1. **Zero-Inbound Alert Detection:** A background poller queries the Grafana Alerting API on GKE every 10 seconds over outbound HTTPS, using `fingerprint + startsAt` deduplication to ensure each firing incident triggers LLM analysis exactly once.
@@ -74,19 +51,19 @@ flowchart LR
 
 ## 📂 Repository Structure
 
-```text
 K8S-AI-SRE-AGENT/
 ├── .github/
 │   └── workflows/
-│       └── ci-cd.yml           # Builds SHA-tagged Docker image & opens deployment PR in manifest repo
-├── agent.py                    # FastAPI entrypoint, 10s outbound poller loop & fingerprint deduplication
-├── analyzer.py                 # Gemini API client with multi-model failover & structured prompt logic
-├── collector.py                # Cross-cluster context aggregator (K8s API, Elasticsearch, Prometheus)
-├── notifier.py                 # Formats & dispatches HTML/text RCA reports via SMTP
-├── sanitizer.py                # Regex-based PII, JWT, credential, and database URI redactor
-├── schemas.py                  # Pydantic models enforcing structured RCA & remediation output
-├── Dockerfile                  # Hardened non-root Python container image definition
-├── requirements.txt            # Pinned Python dependencies
-├── .gitignore                  # Excludes Python cache, local secrets, and environment files
-└── README.md                   # Architecture blueprint, security model, and configuration guide
-```
+│       └── ci-cd.yml                          # Builds SHA-tagged Docker image & opens deployment PR in manifest repo
+├── Images/
+│   └── AI-SRE Alert Triage Architecture.png   # End-to-end Hybrid AI-SRE system architecture diagram
+├── agent.py                                   # FastAPI entrypoint, 10s outbound poller loop & fingerprint deduplication
+├── analyzer.py                                # Gemini API client with multi-model failover & structured prompt logic
+├── collector.py                               # Cross-cluster context aggregator (K8s API, Elasticsearch, Prometheus)
+├── notifier.py                                # Formats & dispatches HTML/text RCA reports via SMTP
+├── sanitizer.py                               # Regex-based PII, JWT, credential, and database URI redactor
+├── schemas.py                                 # Pydantic models enforcing structured RCA & remediation output
+├── Dockerfile                                 # Hardened non-root Python container image definition
+├── requirements.txt                           # Pinned Python dependencies
+├── .gitignore                                 # Excludes Python cache, local secrets, and environment files
+└── README.md                                  # Architecture blueprint, security model, and configuration guide
