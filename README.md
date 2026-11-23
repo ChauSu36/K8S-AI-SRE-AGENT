@@ -6,7 +6,7 @@ This repository contains the source code, containerization setup, and GitOps CI/
 The core objective of this service is to eliminate repetitive manual incident investigation (`kubectl`, Kibana, Grafana) when production alerts fire. Operating under a **Zero-Inbound Exposure** security model, the agent proactively polls firing alerts from GKE, correlates cross-cluster telemetry and Kubernetes events, redacts sensitive PII/secrets, and leverages Google Gemini LLMs to deliver structured Root Cause Analysis (RCA) and safe, Human-in-the-Loop `kubectl` remediation guidance via email.
 
 ## 🏗️ System Architecture
-![AI-SRE Alert Triage Architecture](images/ai-sre-architecture.png)
+![AI-SRE Alert Triage Architecture](Images/ai-sre-architecture.png)
 
 **Incident Triage Workflow:**
 1. **Zero-Inbound Alert Detection:** A background poller queries the Grafana Alerting API on GKE every 10 seconds over outbound HTTPS, using `fingerprint + startsAt` deduplication to ensure each firing incident triggers LLM analysis exactly once.
