@@ -33,9 +33,12 @@ jobs:
             chausu/k8s-ai-sre-agent:latest
             chausu/k8s-ai-sre-agent:${{ github.sha }}
 
-  update-manifest-repo:
+  create-manifest-pr:
     needs: build-and-push
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.AUTO_DEPLOY_TOKEN }}
+      BRANCH_NAME: deploy/ai-sre-agent
     steps:
       - name: Configure Git Bot
         run: |
@@ -46,10 +49,29 @@ jobs:
         run: |
           git clone https://x-access-token:${{ secrets.AUTO_DEPLOY_TOKEN }}@github.com/ChauSu36/hybrid-cloud-k8s-manifests.git manifest-repo
 
-      - name: Update Image Tag in OpenStack Deployment
+      - name: Push Update to Feature Branch & Open PR
         run: |
           cd manifest-repo
+          # Tạo hoặc reset nhánh phụ deploy/ai-sre-agent từ nhánh main mới nhất
+          git checkout -B $BRANCH_NAME
+
+          # Cập nhật tag SHA mới vào file deployment.yaml
           sed -i 's|image: chausu/k8s-ai-sre-agent:.*|image: chausu/k8s-ai-sre-agent:${{ github.sha }}|g' openstack-onpremise/ai-sre-agent/deployment.yaml
+
           git add openstack-onpremise/ai-sre-agent/deployment.yaml
-          git commit -m "ci(ai-sre): update image tag to ${{ github.sha }} [skip ci]" || echo "No changes to commit"
-          git push origin main
+          if git diff --staged --quiet; then
+            echo "No manifest changes to commit"
+            exit 0
+          fi
+
+          git commit -m "ci(ai-sre): bump image tag to ${{ github.sha }}"
+          # Đẩy lên nhánh phụ thay vì nhánh main
+          git push -f origin $BRANCH_NAME
+
+          # Tự động mở Pull Request vào nhánh main (nếu chưa có PR nào đang mở)
+          gh pr create \
+            --base main \
+            --head $BRANCH_NAME \
+            --title "ci(ai-sre): deploy image ${{ github.sha }}" \
+            --body "Automated image tag update from \`K8S-AI-SRE-AGENT\` commit \`${{ github.sha }}\`. Review diff and merge to trigger deployment." \
+            || echo "Pull Request already exists and has been updated with the latest commit."
