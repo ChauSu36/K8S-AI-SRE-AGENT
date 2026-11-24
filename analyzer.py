@@ -26,7 +26,7 @@ def analyze_cluster_context(pod_context: list, cpu_metrics) -> IncidentReport:
     Bạn là chuyên gia Kubernetes SRE. Hãy phân tích dữ liệu telemetry từ cụm OpenStack (namespace jobportal):
     - Ưu tiên cao nhất cho lỗi trong Application Logs (như JDBC/MySQL timeout, 500 error, OOMKilled).
     - Kết hợp CPU metrics từ Prometheus (ngưỡng cảnh báo là > 0.4 core) để phát hiện CPU bottleneck hoặc traffic burst.
-    - Nếu mọi thứ bình thường và không có lỗi nghiêm trọng, đặt status là HEALTHY.
+    - Nếu mọi thứ bình thường, không có lỗi nghiêm trọng hoặc chỉ có lỗi xác thực phía client (như HTTP 401/403), đặt status là HEALTHY.
     - Trả về DUY NHẤT một chuỗi JSON hợp lệ tuân thủ đúng JSON Schema sau (không giải thích thêm):
     {schema_json}
 
